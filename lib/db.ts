@@ -21,12 +21,29 @@ CREATE TABLE IF NOT EXISTS authenticators (id INTEGER PRIMARY KEY AUTOINCREMENT,
 CREATE INDEX IF NOT EXISTS idx_authenticators_user_id ON authenticators(user_id);
 CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,title TEXT NOT NULL,completed INTEGER NOT NULL DEFAULT 0,due_date TEXT,priority TEXT NOT NULL DEFAULT 'medium',is_recurring INTEGER NOT NULL DEFAULT 0,recurrence_pattern TEXT,reminder_minutes INTEGER,last_notification_sent TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT);
 CREATE INDEX IF NOT EXISTS idx_todos_user_id ON todos(user_id); CREATE INDEX IF NOT EXISTS idx_todos_due_date ON todos(due_date);
+CREATE INDEX IF NOT EXISTS idx_todos_user_due ON todos(user_id, due_date);
 CREATE TABLE IF NOT EXISTS subtasks (id INTEGER PRIMARY KEY AUTOINCREMENT,todo_id INTEGER NOT NULL REFERENCES todos(id) ON DELETE CASCADE,title TEXT NOT NULL,completed INTEGER NOT NULL DEFAULT 0,position INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL DEFAULT (datetime('now')));
 CREATE INDEX IF NOT EXISTS idx_subtasks_todo_id ON subtasks(todo_id);
 CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,color TEXT NOT NULL DEFAULT '#3B82F6',created_at TEXT NOT NULL DEFAULT (datetime('now')),UNIQUE(user_id,name));
 CREATE TABLE IF NOT EXISTS todo_tags (todo_id INTEGER NOT NULL REFERENCES todos(id) ON DELETE CASCADE,tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,PRIMARY KEY(todo_id,tag_id));
 CREATE TABLE IF NOT EXISTS templates (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,description TEXT,category TEXT,title_template TEXT NOT NULL,priority TEXT NOT NULL DEFAULT 'medium',is_recurring INTEGER NOT NULL DEFAULT 0,recurrence_pattern TEXT,reminder_minutes INTEGER,due_date_offset_minutes INTEGER,subtasks_json TEXT,created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS idx_templates_user_id ON templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_todo_tags_tag_id ON todo_tags(tag_id);
 CREATE TABLE IF NOT EXISTS holidays (id INTEGER PRIMARY KEY AUTOINCREMENT,date TEXT NOT NULL,name TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now'))); CREATE UNIQUE INDEX IF NOT EXISTS idx_holidays_date ON holidays(date);`);
+// Upgrade existing databases in place; claims expire so a closed tab cannot lose a reminder.
+const todoColumns=db.pragma('table_info(todos)') as {name:string}[];
+if(!todoColumns.some(c=>c.name==='notification_claim_token'))db.exec('ALTER TABLE todos ADD COLUMN notification_claim_token TEXT');
+if(!todoColumns.some(c=>c.name==='notification_claimed_at'))db.exec('ALTER TABLE todos ADD COLUMN notification_claimed_at INTEGER');
 type Row=Record<string, unknown>;
 export function getTodo(id:number,userId:number):Todo|undefined { const row=db.prepare('SELECT * FROM todos WHERE id=? AND user_id=?').get(id,userId) as Row|undefined; if(!row)return; return {...row,completed:!!row.completed,is_recurring:!!row.is_recurring,subtasks:(db.prepare('SELECT * FROM subtasks WHERE todo_id=? ORDER BY position,id').all(id) as Row[]).map(s=>({...s,completed:!!s.completed})),tags:db.prepare('SELECT tags.* FROM tags JOIN todo_tags ON tags.id=todo_tags.tag_id WHERE todo_tags.todo_id=? ORDER BY tags.name').all(id)} as unknown as Todo; }
-export function getTodos(userId:number):Todo[] { return (db.prepare('SELECT id FROM todos WHERE user_id=?').all(userId) as {id:number}[]).map(r=>getTodo(r.id,userId)!); }
+export function getTodos(userId:number):Todo[] {
+  // Read relationships in batches so loading N tasks does not issue N additional queries.
+  const rows=db.prepare('SELECT * FROM todos WHERE user_id=? ORDER BY id').all(userId) as Row[];
+  const subtasks=db.prepare('SELECT s.* FROM subtasks s JOIN todos t ON t.id=s.todo_id WHERE t.user_id=? ORDER BY s.position,s.id').all(userId) as Row[];
+  const tags=db.prepare('SELECT tt.todo_id, tags.* FROM todo_tags tt JOIN todos t ON t.id=tt.todo_id JOIN tags ON tags.id=tt.tag_id WHERE t.user_id=? AND tags.user_id=? ORDER BY tags.name').all(userId,userId) as Row[];
+  const byId=new Map<number,Todo>();
+  for(const row of rows) byId.set(row.id as number,{...row,completed:!!row.completed,is_recurring:!!row.is_recurring,subtasks:[],tags:[]} as unknown as Todo);
+  for(const row of subtasks){const todo=byId.get(row.todo_id as number);if(todo)todo.subtasks.push({...row,completed:!!row.completed} as unknown as Subtask)}
+  for(const row of tags){const todo=byId.get(row.todo_id as number);if(todo){const {todo_id,...tag}=row;void todo_id;todo.tags.push(tag as unknown as Tag)}}
+  return [...byId.values()];
+}

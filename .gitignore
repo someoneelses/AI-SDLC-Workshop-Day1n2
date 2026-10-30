@@ -8,3 +8,4 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 !.env.example
+.next-test/

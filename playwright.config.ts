@@ -1,2 +1,3 @@
 import {defineConfig} from '@playwright/test';
-export default defineConfig({testDir:'./tests',fullyParallel:false,workers:1,timeout:30000,use:{baseURL:'http://localhost:3000',timezoneId:'Asia/Singapore',channel:'chrome',headless:true},webServer:{command:'npm run dev',url:'http://localhost:3000/login',reuseExistingServer:false,timeout:120000,env:{DATABASE_PATH:'test-todos.db'}}});
+const port=process.env.PLAYWRIGHT_PORT||'3217';
+export default defineConfig({testDir:'./tests',testMatch:'**/*.spec.ts',fullyParallel:false,workers:1,timeout:30000,use:{baseURL:`http://localhost:${port}`,timezoneId:'Asia/Singapore',channel:process.env.PLAYWRIGHT_BROWSER_CHANNEL||'chrome',headless:true},webServer:{command:`npm run dev -- -p ${port}`,url:`http://localhost:${port}/login`,reuseExistingServer:false,timeout:120000,env:{DATABASE_PATH:'test-todos.db',WEBAUTHN_ORIGIN:`http://localhost:${port}`,WEBAUTHN_RP_ID:'localhost',NEXT_TEST_BUILD:'1'}}});
