@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "test": "playwright test",
     "seed": "tsx scripts/seed-holidays.ts",
-    "test:unit": "tsx --test tests/unit/date.test.ts tests/unit/filters.test.ts tests/unit/db.test.ts"
+    "test:unit": "tsx --test tests/unit/date.test.ts tests/unit/filters.test.ts tests/unit/db.test.ts tests/unit/migrations.test.ts",
+    "benchmark": "tsx scripts/benchmark-performance.ts"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.0.0",
