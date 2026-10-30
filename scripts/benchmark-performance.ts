@@ -1,5 +1,6 @@
 import {performance} from 'node:perf_hooks';
 import {applyFilters,groupTodos,initialFilters} from '../lib/filters';
+import {parseSingapore} from '../lib/timezone';
 import type {Todo} from '../lib/db';
 
 // Synthetic, in-process measurements: no server, browser, or real user database.
@@ -26,7 +27,7 @@ measure('Filter, group and sort 1,000 tasks',()=>groupTodos(applyFilters(todos,f
 async function benchmarkDatabase(){
   // The database module reads this path at import time. All fixture data stays in memory.
   process.env.DATABASE_PATH=':memory:';
-  const {db,getTodos}=await import('../lib/db');
+  const {db,getTodos,claimDueNotifications}=await import('../lib/db');
   try{
     const userId=Number(db.prepare('INSERT INTO users(username) VALUES(?)').run('benchmark-user').lastInsertRowid);
     const tagId=Number(db.prepare('INSERT INTO tags(user_id,name) VALUES(?,?)').run(userId,'Work').lastInsertRowid);
@@ -37,8 +38,17 @@ async function benchmarkDatabase(){
       const todoId=Number(insertTodo.run(userId,`Task ${i}`,'2026-12-01T09:00','medium').lastInsertRowid);
       insertSubtask.run(todoId,'Step',0);insertTag.run(todoId,tagId);
     }})();
+    db.prepare("UPDATE todos SET due_date='2026-07-01T08:10',reminder_minutes=15 WHERE user_id=? AND id<=50").run(userId);
     if(getTodos(userId).length!==10000)throw new Error('Benchmark fixture could not be read');
     measure('Read 10,000 tasks with subtasks and tags from in-memory SQLite',()=>getTodos(userId));
+    const now=Date.parse('2026-07-01T00:00:00Z');
+    measure('Find 50 due reminders by loading 10,000 tasks',()=>getTodos(userId).filter(t=>!t.completed&&t.due_date&&t.reminder_minutes&&!t.last_notification_sent&&now>=parseSingapore(t.due_date).getTime()-t.reminder_minutes*60000&&now<=parseSingapore(t.due_date).getTime()));
+    const resetClaims=db.prepare('UPDATE todos SET notification_claim_token=NULL,notification_claimed_at=NULL WHERE user_id=? AND notification_claim_token IS NOT NULL');
+    measure('Claim and release 50 due reminders among 10,000 tasks',()=>{
+      const claimed=claimDueNotifications(userId,new Date(now));
+      if(claimed.length!==50)throw new Error(`Expected 50 reminders, got ${claimed.length}`);
+      resetClaims.run(userId);
+    });
     const pageCount=db.pragma('page_count',{simple:true}) as number;
     const pageSize=db.pragma('page_size',{simple:true}) as number;
     console.log(`In-memory SQLite logical size: ${(pageCount*pageSize/1024/1024).toFixed(2)} MiB (10,000 tasks, subtasks and tags)`);

@@ -9,8 +9,9 @@
     "lint": "eslint .",
     "test": "playwright test",
     "seed": "tsx scripts/seed-holidays.ts",
-    "test:unit": "tsx --test tests/unit/date.test.ts tests/unit/filters.test.ts tests/unit/db.test.ts tests/unit/migrations.test.ts",
-    "benchmark": "tsx scripts/benchmark-performance.ts"
+    "test:unit": "tsx --test tests/unit/date.test.ts tests/unit/filters.test.ts tests/unit/db.test.ts tests/unit/migrations.test.ts tests/unit/notifications.test.ts",
+    "benchmark": "tsx scripts/benchmark-performance.ts",
+    "benchmark:bundle": "node scripts/benchmark-bundle.mjs"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.0.0",
