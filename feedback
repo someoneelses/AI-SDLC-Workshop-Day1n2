@@ -1,0 +1,61 @@
+The application scores 103/200 against the local EVALUATION.md (Documents/GitHub/AI-SDLC-Workshop-Day1n2/
+  EVALUATION.md:817). The benchmark labels scores from 100–119 “Incomplete.”
+
+  This is an evidence-based estimate: the benchmark specifies category weights and gives each feature 0, 5, or
+  10 points, but does not define how to award partial points within the other categories. I treated unverified
+  deployment and manual checks as zero rather than assuming they pass.
+
+   Category                     Score    Basis
+  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Feature completeness        70/110    Three features meet the assessed criteria; eight have benchmark gaps.
+  ─────────────────────────  ─────────  ────────────────────────────────────────────────────────────────────────
+   Testing coverage             12/30    E2E: 10/15; date-calculation probes: 2/10; manual testing: 0/5.
+  ─────────────────────────  ─────────  ────────────────────────────────────────────────────────────────────────
+   Deployment                    7/30    Configuration: 3/5; documentation: 4/5; no verified cloud deployment
+                                         or production-site testing.
+  ─────────────────────────  ─────────  ────────────────────────────────────────────────────────────────────────
+   Quality and performance      14/30    Code quality: 6/10; performance: 4/10; accessibility: 1/5; security:
+                                         3/5.
+  ─────────────────────────  ─────────  ────────────────────────────────────────────────────────────────────────
+   Total                      103/200
+
+   Feature                 Score    Main reason
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Todo CRUD                5/10    Core operations work; the benchmark asks for delete confirmation, while the
+                                    implementation follows the one-shot instruction to delete immediately.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Priority                10/10    Priority, sorting, filters, and badge contrast were checked.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Recurring todos         10/10    All four date patterns passed additional edge-case checks.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Reminders                5/10    A simulated notification passed; actual browser permission and delivery
+                                    remain unverified.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Subtasks                 5/10    Core behavior works; the benchmark’s requested percentage text is absent.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Tags                     5/10    Management and filtering work; clicking a badge to filter and a filter
+                                    indicator are absent.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Templates                5/10    Creation and use work; category filtering and the full template preview are
+                                    absent.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Search and filtering     5/10    Combined filters work; searching tag names and badge-click filtering are
+                                    absent.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Export and import        5/10    Relationships and validation work; the requested success message with
+                                    counts is absent.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Calendar                 5/10    Calendar and task display work; the Today button and weekend styling are
+                                    absent.
+  ──────────────────────  ───────  ─────────────────────────────────────────────────────────────────────────────
+   Authentication          10/10    Passkey registration, login, session protection, and logout passed
+                                    automated checks.
+
+  The 12 Playwright tests passed three consecutive runs, and the production build and lint passed. Lint reported
+  three warnings. Additional isolated checks covered recurrence boundaries, combined filters, invalid-import
+  rollback, and simulated notifications. A local five-request sample with 1,000 tasks averaged about 82 ms per
+  API request; that is not a deployed performance benchmark.
+
+  I did not verify a cloud deployment, Lighthouse score, real notification delivery, Firefox or Safari, or
+  mobile browsers. The benchmark’s deployment points therefore remain largely unawarded. The working tree is
+  clean.
