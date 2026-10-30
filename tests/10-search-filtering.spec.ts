@@ -1,0 +1,2 @@
+import {test,expect} from '@playwright/test';import {register,createTodo,addSubtask} from './helpers';
+test('search finds subtask titles',async({page})=>{await register(page);const t=await createTodo(page,'Project');await addSubtask(page,t.id,'Unique needle');await createTodo(page,'Other task');await page.reload();await page.getByLabel('Search tasks').fill('needle');await expect(page.getByText('Project',{exact:true})).toBeVisible();await expect(page.getByText('Other task',{exact:true})).toHaveCount(0)});

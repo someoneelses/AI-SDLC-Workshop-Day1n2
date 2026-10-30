@@ -1,0 +1,2 @@
+import {test,expect} from '@playwright/test';import {register,createTemplate} from './helpers';
+test('using a template creates incomplete subtasks',async({page})=>{await register(page);const t=await createTemplate(page,{name:'Checklist',title_template:'New task',subtasks:[{title:'Step',position:0,completed:true}]});const result=await (await page.request.post(`/api/templates/${t.id}/use`)).json();expect(result.subtasks[0].title).toBe('Step');expect(result.subtasks[0].completed).toBe(false)});

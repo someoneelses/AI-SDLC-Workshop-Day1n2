@@ -669,3 +669,5 @@ For questions or issues, refer to the troubleshooting section or ask Copilot Cha
 ```
 @workspace I'm having trouble with [describe issue]
 ```
+
+For this repository's implemented application and current setup steps, see [SETUP.md](SETUP.md).

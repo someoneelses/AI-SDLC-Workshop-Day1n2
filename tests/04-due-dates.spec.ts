@@ -1,0 +1,2 @@
+import {test,expect} from '@playwright/test';import {register} from './helpers';
+test('due dates must be in the future and recurrence requires one',async({page})=>{await register(page);expect((await page.request.post('/api/todos',{data:{title:'Past',due_date:'2000-01-01T12:00'}})).status()).toBe(400);expect((await page.request.post('/api/todos',{data:{title:'Repeat',is_recurring:true,recurrence_pattern:'daily'}})).status()).toBe(400)});

@@ -1,0 +1,2 @@
+import {test,expect} from '@playwright/test';import {register,login} from './helpers';
+test('passkey registration, session protection and login',async({page})=>{const username=await register(page);expect((await page.request.get('/api/auth/me')).status()).toBe(200);await page.request.post('/api/auth/logout');expect((await page.request.get('/api/todos')).status()).toBe(401);await login(page,username)});
